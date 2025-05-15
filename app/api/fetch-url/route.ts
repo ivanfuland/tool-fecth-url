@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 
+// Explicitly set the runtime to edge
+export const runtime = 'edge';
+
 // Define the expected structure of the response from the n8n webhook
 interface N8NResponse {
   succcess?: boolean; // Changed from success to succcess and made optional
