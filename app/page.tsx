@@ -2,6 +2,7 @@
 
 import { useState, FormEvent } from 'react';
 import MarkdownDisplay from './(components)/markdown-display';
+import ContentModal from './(components)/content-modal';
 
 interface FetchResult {
   success: boolean;
@@ -17,14 +18,14 @@ export default function HomePage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [result, setResult] = useState<FetchResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [showFullContent, setShowFullContent] = useState<boolean>(false); // New state for toggling full content
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
     setError(null);
     setResult(null);
-    setShowFullContent(false); // Reset on new submission
+    setIsModalOpen(false);
 
     if (!url.trim()) {
       setError('请输入有效的 URL。');
@@ -56,6 +57,30 @@ export default function HomePage() {
       setError(err.message || '发生未知错误。');
     }
     setLoading(false);
+  };
+
+  const openModalWithContent = () => {
+    if (result && result.msg) {
+      setIsModalOpen(true);
+    }
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+  
+  const handleDownloadMarkdown = () => {
+    if (!result || !result.msg) return;
+
+    const filename = result.title ? `${result.title.replace(/[^a-z0-9_\-\[\]\s]/gi, '_').substring(0, 50)}.md` : "content.md";
+    const blob = new Blob([result.msg], { type: 'text/markdown;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
   };
 
   return (
@@ -96,46 +121,47 @@ export default function HomePage() {
 
         {result && result.success && (
           <div className="space-y-8">
-            {result.title && <h2 className="text-2xl font-semibold text-gray-700 border-b pb-2">{result.title}</h2>}
+            {result.title && <h2 className="text-2xl font-semibold text-gray-700 border-b pb-2 mb-6">{result.title}</h2>}
             
             {result.abstract && (
-              <section>
-                <h3 className="text-xl font-semibold text-gray-600 mb-3">摘要内容:</h3>
+              <section className="relative p-4 border border-gray-200 rounded-lg shadow-sm bg-slate-50">
+                <div className="flex justify-between items-start mb-3">
+                  <h3 className="text-xl font-semibold text-gray-700">摘要内容:</h3>
+                  {result.msg && (
+                    <button
+                      onClick={openModalWithContent}
+                      className="absolute top-4 right-4 px-3 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-100 rounded-md hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-indigo-500 transition duration-150 ease-in-out whitespace-nowrap"
+                    >
+                      阅读原文
+                    </button>
+                  )}
+                </div>
                 <MarkdownDisplay markdownContent={result.abstract} />
               </section>
             )}
 
             {result.highlights && result.highlights.length > 0 && (
-              <section>
-                <h3 className="text-xl font-semibold text-gray-600 mb-3">重点内容:</h3>
+              <section className="mt-6 p-4 border border-gray-200 rounded-lg shadow-sm bg-slate-50">
+                <h3 className="text-xl font-semibold text-gray-700 mb-3">重点内容:</h3>
                 <div className="space-y-4">
                   {result.highlights.map((highlight, index) => (
-                    <blockquote key={index} className="p-4 my-4 border-l-4 border-gray-300 bg-gray-50">
-                      <p className="text-gray-700 italic">
+                    <blockquote key={index} className="p-3 my-2 border-l-4 border-gray-400 bg-gray-100 rounded-r-md">
+                      <div className="text-gray-700 italic text-sm">
                         <MarkdownDisplay markdownContent={highlight} />
-                      </p>
+                      </div>
                     </blockquote>
                   ))}
                 </div>
               </section>
             )}
 
-            {result.msg && (
-              <section>
-                <div className="flex justify-between items-center mb-3">
-                  <h3 className="text-xl font-semibold text-gray-600">完整内容:</h3>
-                  <button
-                    onClick={() => setShowFullContent(!showFullContent)}
-                    className="px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-100 rounded-md hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out"
-                  >
-                    {showFullContent ? '隐藏完整内容' : '显示完整内容'}
-                  </button>
-                </div>
-                {showFullContent && (
-                  <MarkdownDisplay markdownContent={result.msg} />
-                )}
-              </section>
-            )}
+            <ContentModal 
+              isOpen={isModalOpen}
+              onClose={closeModal}
+              title={result.title}
+              content={result.msg}
+              onDownload={handleDownloadMarkdown}
+            />
           </div>
         )}
       </div>
