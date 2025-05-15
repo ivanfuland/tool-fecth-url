@@ -17,12 +17,14 @@ export default function HomePage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [result, setResult] = useState<FetchResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showFullContent, setShowFullContent] = useState<boolean>(false); // New state for toggling full content
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
     setError(null);
     setResult(null);
+    setShowFullContent(false); // Reset on new submission
 
     if (!url.trim()) {
       setError('请输入有效的 URL。');
@@ -120,8 +122,18 @@ export default function HomePage() {
 
             {result.msg && (
               <section>
-                <h3 className="text-xl font-semibold text-gray-600 mb-3">完整内容:</h3>
-                <MarkdownDisplay markdownContent={result.msg} />
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-xl font-semibold text-gray-600">完整内容:</h3>
+                  <button
+                    onClick={() => setShowFullContent(!showFullContent)}
+                    className="px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-100 rounded-md hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out"
+                  >
+                    {showFullContent ? '隐藏完整内容' : '显示完整内容'}
+                  </button>
+                </div>
+                {showFullContent && (
+                  <MarkdownDisplay markdownContent={result.msg} />
+                )}
               </section>
             )}
           </div>
