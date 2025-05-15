@@ -1,14 +1,20 @@
 # Next.js URL Fetcher for n8n
 
-这个项目是一个使用 Next.js (App Router) 构建的 Web 应用，它可以接收用户输入的 URL，然后通过调用一个 n8n webhook 来获取该 URL 的完整爬取内容和摘要内容（均为 Markdown 格式），并在页面上展示这些信息。
+这个项目是一个使用 Next.js (App Router) 构建的 Web 应用，它可以接收用户输入的 URL，然后直接从客户端调用一个 n8n webhook 来获取该 URL 的标题、摘要、重点内容以及完整的原始内容（均为 Markdown 格式），并在页面上展示这些信息。
 
 ## 功能
 
-- 用户输入 URL。
-- 应用调用后端 API (`/api/fetch-url`)。
-- 后端 API 调用配置好的 n8n webhook。
-- n8n webhook 返回 URL 的标题、完整 Markdown 内容和摘要 Markdown 内容。
-- 应用在前端友好地展示返回的 Markdown 内容。
+- 用户在前端页面输入 URL。
+- 应用直接从客户端调用配置好的 n8n webhook，并传递 URL。
+- n8n webhook 负责抓取和处理 URL 内容，返回：
+    - 标题 (Title)
+    - 摘要内容 (Abstract - Markdown 格式)
+    - 重点内容 (Highlights - Markdown 格式数组)
+    - 完整原始内容 (Msg - Markdown 格式)
+- 前端页面展示标题、摘要和重点内容。
+- 提供"阅读原文"功能，在模态框中显示完整的 Markdown 内容。
+- 在模态框中，用户可以"复制原文到剪贴板"或"下载原文为 .md 文件"。
+- 处理并显示调用过程中的错误信息。
 
 ## 技术栈
 
@@ -16,39 +22,37 @@
 - React 18
 - TypeScript
 - Tailwind CSS (带 `@tailwindcss/typography` 插件美化 Markdown)
-- `react-markdown` 用于渲染 Markdown
+- `react-markdown` 和 `remark-gfm` 用于渲染 GitHub Flavored Markdown
+- `@headlessui/react` 用于构建模态框 (Dialog)
 
-## 项目结构
+## 项目结构 (主要文件)
 
 ```
 fetchurl/
 ├── app/
-│   ├── api/
-│   │   └── fetch-url/
-│   │       └── route.ts       # 后端 API 路由
-│   │   ├── (components)/
-│   │   │   └── markdown-display.tsx # Markdown 显示组件
-│   │   ├── layout.tsx           # 全局布局
-│   │   ├── page.tsx             # 主页面 (/) 
-│   │   └── globals.css          # 全局样式
-│   ├── public/                  # 静态资源
-│   ├── .env.local.example       # 环境变量示例
-│   ├── package.json
-│   ├── tsconfig.json
-│   ├── next.config.mjs
-│   ├── postcss.config.js
-│   └── tailwind.config.ts
-└── README.md
+│   ├── components/
+│   │   ├── markdown-display.tsx # Markdown 显示组件
+│   │   └── content-modal.tsx    # 内容显示与交互模态框组件
+│   ├── layout.tsx             # 全局布局
+│   ├── page.tsx               # 主页面 (/)，包含主要的业务逻辑
+│   └── globals.css            # 全局样式
+├── public/                    # 静态资源
+├── .env.local.example         # 环境变量示例
+├── package.json
+├── tsconfig.json
+├── next.config.mjs
+├── postcss.config.js
+└── tailwind.config.ts
 ```
 
 ## 环境变量
 
-在项目根目录创建一个 `.env.local` 文件，并可以设置以下变量：
+在项目根目录创建一个 `.env.local` 文件，并可以设置以下**客户端**环境变量：
 
 ```
-N8N_WEBHOOK_URL= 通过环境变量设置
+NEXT_PUBLIC_N8N_WEBHOOK_URL="你的n8n webhook URL"
 ```
-
+如果未设置此环境变量，代码中会使用一个默认的 n8n webhook URL (`https://n8n.judyplan.com/webhook/fecth-url`)。建议始终通过环境变量配置此 URL。
 
 ## 本地开发
 
@@ -86,14 +90,19 @@ N8N_WEBHOOK_URL= 通过环境变量设置
 
 ### 部署到 Cloudflare Pages
 
-Next.js (App Router) 项目可以很好地部署到 Cloudflare Pages。
+Next.js (App Router) 项目可以很好地部署到 Cloudflare Pages。请按照以下步骤操作：
 
-1.  将您的代码推送到 GitHub/GitLab 仓库。
-2.  在 Cloudflare Pages 仪表板中，连接您的仓库。
-3.  配置构建设置：
-    - **框架预设 (Framework preset)**: 选择 `Next.js`。
-    - **构建命令 (Build command)**: 通常是 `npm run build` 或 `yarn build` (Cloudflare 可能会自动填充)。
-    - **构建输出目录 (Build output directory)**: 通常是 `.next` (Cloudflare 可能会自动填充)。
-    - **环境变量 (Environment variables)**: 添加您的 `N8N_WEBHOOK_URL` (如果需要覆盖默认值)。
+1.  在Cloudflare Dashboard中，进入Pages选项。
+2.  点击"创建项目"。
+3.  选择并连接您的Git仓库提供商。
+4.  选择包含本应用的仓库。
+5.  配置构建设置：
+    *   **框架预设 (Framework preset)**: 选择 `Next.js (Static HTML Export)`。
+    *   **构建命令 (Build command)**: 系统会自动填入 `npx next build`。
+    *   **构建输出目录 (Build output directory)**: `out`。
+    *   **根目录 (Root directory)**: 保持默认值 `/`。
+    *   **Node.js 版本 (Node.js version)**: 选择 16.x 或更高版本。
+    *   **环境变量 (Environment variables)**: 添加 `NEXT_PUBLIC_N8N_WEBHOOK_URL` 并设置为您的 n8n webhook URL。
+6.  点击"保存并部署"。
 
 Cloudflare Pages 将自动处理构建和部署。由于 Next.js 的 App Router 使用了较新的 Node.js 功能，请确保 Cloudflare Pages 的构建环境支持兼容的 Node.js 版本 (通常 Cloudflare 会保持更新)。 
