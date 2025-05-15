@@ -1,0 +1,44 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Project Overview
+
+This project is a Next.js web application designed to fetch and display content from a user-provided URL. It integrates with an n8n webhook to retrieve both the full content and a summarized version of the webpage, presenting them in Markdown format. The application is intended for deployment on Cloudflare Pages using static HTML export.
+
+## Core Functionality
+
+1.  **URL Input**: Users can input a URL into a form.
+2.  **Webhook Invocation**: On submission, the client-side JavaScript directly calls a pre-configured n8n webhook ([https://n8n.judyplan.com/webhook/fecth-url](https://n8n.judyplan.com/webhook/fecth-url) was the last known URL, configurable via `NEXT_PUBLIC_N8N_WEBHOOK_URL`). The request body is `{"link": "USER_PROVIDED_URL"}`.
+3.  **Content Display**: The n8n webhook is expected to return a JSON object containing:
+    *   `succcess: true` (or `success: true`)
+    *   `title: String` (Page title)
+    *   `msg: String` (Full page content in Markdown)
+    *   `abstract: String` (Summarized content in Markdown)
+    *   `highlights: Array<String>` (Key excerpts in Markdown)
+    The application then displays the title, abstract, highlights, and provides a modal an option to view/copy/download the full `msg` content.
+
+## Key Technologies & Files
+
+*   **Next.js (v14.2.3)**: React framework for the frontend.
+    *   Configuration: [fetchurl/next.config.mjs](mdc:fetchurl/next.config.mjs) (configured for `output: 'export'`)
+    *   Package Management: [fetchurl/package.json](mdc:fetchurl/package.json) (build script: `next build && next export`)
+*   **React (v18)**: For building the user interface.
+*   **TypeScript**: For static typing.
+    *   Configuration: [fetchurl/tsconfig.json](mdc:fetchurl/tsconfig.json)
+*   **Tailwind CSS**: For styling, including the `@tailwindcss/typography` plugin for Markdown styling.
+    *   Configuration: [fetchurl/tailwind.config.ts](mdc:fetchurl/tailwind.config.ts), [fetchurl/postcss.config.js](mdc:fetchurl/postcss.config.js)
+    *   Global Styles: [fetchurl/app/globals.css](mdc:fetchurl/app/globals.css)
+*   **Main Page Component**: [fetchurl/app/page.tsx](mdc:fetchurl/app/page.tsx) - Contains the primary UI lógica for input, submission, and display of fetched content.
+*   **Markdown Rendering Component**: [fetchurl/app/components/markdown-display.tsx](mdc:fetchurl/app/components/markdown-display.tsx) - Uses `react-markdown` and `remark-gfm` to render Markdown content, including tables.
+*   **Modal Component**: [fetchurl/app/components/content-modal.tsx](mdc:fetchurl/app/components/content-modal.tsx) - Uses `@headlessui/react` to display the full content in a modal dialog, with options to copy to clipboard and download as a .md file.
+*   **Deployment**: Configured for static HTML export to Cloudflare Pages. The API route `fetchurl/app/api/fetch-url/route.ts` was previously used but has been **deleted** in favor of client-side webhook calls.
+
+## Important Considerations for Static Export
+
+*   **Client-Side Webhook Call**: The logic to call the n8n webhook resides entirely in [fetchurl/app/page.tsx](mdc:fetchurl/app/page.tsx) and executes in the user's browser.
+*   **CORS**: The n8n webhook endpoint **must** be configured with appropriate CORS headers to allow requests from the Cloudflare Pages domain where this application is hosted.
+*   **Environment Variables**: The n8n webhook URL can be configured via the `NEXT_PUBLIC_N8N_WEBHOOK_URL` environment variable in an `.env.local` file for local development, and set in Cloudflare Pages build environment for production.
+
+This rule provides a snapshot of the project's architecture and key components after deciding to switch to a static HTML export deployment model.
