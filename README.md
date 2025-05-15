@@ -46,10 +46,9 @@ fetchurl/
 在项目根目录创建一个 `.env.local` 文件，并可以设置以下变量：
 
 ```
-N8N_WEBHOOK_URL=https://your-n8n-instance.com/webhook-path/fetch-url
+N8N_WEBHOOK_URL= 通过环境变量设置
 ```
 
-如果未设置 `N8N_WEBHOOK_URL`，程序将默认使用 `https://n8n.judyplan.com/webhook-test/fetch-url`。
 
 ## 本地开发
 

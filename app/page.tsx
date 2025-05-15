@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
-import MarkdownDisplay from './(components)/markdown-display';
-import ContentModal from './(components)/content-modal';
+import MarkdownDisplay from './components/markdown-display';
+import ContentModal from './components/content-modal';
 
 interface FetchResult {
   success: boolean;
